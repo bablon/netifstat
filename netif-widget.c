@@ -19,6 +19,7 @@
 #include <netlink/netlink.h>
 #include <netlink/genl/ctrl.h>
 #include <net/if.h>
+#include <inttypes.h>
 
 #include <glib-unix.h>
 
