@@ -201,10 +201,16 @@ struct _NetifWidget {
 	int rtnl_id;
 
 	bool raw_bytes;
+	bool simple_mode;
+
+	GtkColumnViewColumn *index_column;
+	GtkColumnViewColumn *rx_packets_column;
+	GtkColumnViewColumn *tx_packets_column;
 };
 
 enum {
 	PROP_RAW_BYTES = 1,
+	PROP_SIMPLE_MODE,
 };
 
 G_DEFINE_FINAL_TYPE(NetifWidget, netif_widget, ADW_TYPE_BIN)
@@ -466,7 +472,7 @@ static void rx_bytes_setup_func(GtkSignalListItemFactory *self,
 {
 	GtkWidget *label = gtk_label_new("");
 	gtk_label_set_xalign(GTK_LABEL(label), 0);
-	gtk_widget_set_size_request(GTK_WIDGET(label), 90, 0);
+	gtk_widget_set_size_request(GTK_WIDGET(label), 70, 0);
 	gtk_list_item_set_child(list_item, label);
 
 	GtkExpression *expr[2] = {
@@ -488,7 +494,7 @@ static void tx_bytes_setup_func(GtkSignalListItemFactory *self,
 {
 	GtkWidget *label = gtk_label_new("");
 	gtk_label_set_xalign(GTK_LABEL(label), 0);
-	gtk_widget_set_size_request(GTK_WIDGET(label), 90, 0);
+	gtk_widget_set_size_request(GTK_WIDGET(label), 70, 0);
 	gtk_list_item_set_child(list_item, label);
 
 	GtkExpression *expr[2] = {
@@ -565,7 +571,7 @@ static void rx_rate_setup_func(GtkSignalListItemFactory *self,
 {
 	GtkWidget *label = gtk_label_new("");
 	gtk_label_set_xalign(GTK_LABEL(label), 0);
-	gtk_widget_set_size_request(GTK_WIDGET(label), 100, 0);
+	gtk_widget_set_size_request(GTK_WIDGET(label), 80, 0);
 	gtk_list_item_set_child(list_item, label);
 
 	GtkExpression *expr[2] = {
@@ -587,7 +593,7 @@ static void tx_rate_setup_func(GtkSignalListItemFactory *self,
 {
 	GtkWidget *label = gtk_label_new("");
 	gtk_label_set_xalign(GTK_LABEL(label), 0);
-	gtk_widget_set_size_request(GTK_WIDGET(label), 100, 0);
+	gtk_widget_set_size_request(GTK_WIDGET(label), 80, 0);
 	gtk_list_item_set_child(list_item, label);
 
 	GtkExpression *expr[2] = {
@@ -654,11 +660,16 @@ static void netif_widget_constructed(GObject *object)
 	gtk_column_view_column_set_expand(rx_rate_column, TRUE);
 	gtk_column_view_column_set_expand(tx_rate_column, TRUE);
 
-#if 0
-	gtk_column_view_column_set_visible(index_column, FALSE);
-	gtk_column_view_column_set_visible(rx_packets_column, FALSE);
-	gtk_column_view_column_set_visible(tx_packets_column, FALSE);
-#endif
+	self->index_column = index_column;
+	self->rx_packets_column = rx_packets_column;
+	self->tx_packets_column = tx_packets_column;
+
+	if (self->simple_mode) {
+		gtk_column_view_column_set_visible(index_column, FALSE);
+		gtk_column_view_column_set_visible(rx_packets_column, FALSE);
+		gtk_column_view_column_set_visible(tx_packets_column, FALSE);
+	}
+
 	gtk_column_view_append_column(GTK_COLUMN_VIEW(columnview), name_column);
 	gtk_column_view_append_column(GTK_COLUMN_VIEW(columnview), index_column);
 	gtk_column_view_append_column(GTK_COLUMN_VIEW(columnview), rx_bytes_column);
@@ -680,7 +691,24 @@ static void netif_widget_get_property(GObject *object,
 	case PROP_RAW_BYTES:
 		g_value_set_boolean(value, self->raw_bytes);
 		break;
+	case PROP_SIMPLE_MODE:
+		g_value_set_boolean(value, self->simple_mode);
+		break;
 	}
+}
+
+static void netif_widget_set_simple_mode(NetifWidget *self, bool simple_mode)
+{
+	bool visible = simple_mode ? FALSE : TRUE;
+
+	self->simple_mode = simple_mode;
+
+	if (self->index_column)
+		gtk_column_view_column_set_visible(self->index_column, visible);
+	if (self->rx_packets_column)
+		gtk_column_view_column_set_visible(self->rx_packets_column, visible);
+	if (self->tx_packets_column)
+		gtk_column_view_column_set_visible(self->tx_packets_column, visible);
 }
 
 static void netif_widget_set_property(GObject *object,
@@ -691,6 +719,9 @@ static void netif_widget_set_property(GObject *object,
 	switch (prop_id) {
 	case PROP_RAW_BYTES:
 		self->raw_bytes = g_value_get_boolean(value);
+		break;
+	case PROP_SIMPLE_MODE:
+		netif_widget_set_simple_mode(self, g_value_get_boolean(value));
 		break;
 	}
 }
@@ -709,6 +740,11 @@ static void netif_widget_class_init(NetifWidgetClass *class)
 			g_param_spec_boolean("raw-bytes", "raw bytes", "raw bytes",
 				FALSE,
 				G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+	g_object_class_install_property(object_class, PROP_SIMPLE_MODE,
+			g_param_spec_boolean("simple-mode", "simple mode", "simple mode",
+				TRUE,
+				G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_CONSTRUCT));
 }
 
 static void netif_widget_init(NetifWidget *self)

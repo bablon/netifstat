@@ -47,6 +47,8 @@ GtkWidget *adw_win_new(GtkApplication *app, GtkWidget *content)
 	GMenu *section = g_menu_new();
 	item = g_menu_item_new("Raw Bytes", "app.raw-bytes");
 	g_menu_append_item(section, item);
+	item = g_menu_item_new("Simple Mode", "app.simple-mode");
+	g_menu_append_item(section, item);
 
 	g_menu_append_section(menu, NULL, G_MENU_MODEL(section));
 
@@ -80,12 +82,15 @@ static void on_activate(GtkApplication *app)
 	GPropertyAction *action = g_property_action_new("raw-bytes", netif, "raw-bytes");
 	g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(action));
 
+	action = g_property_action_new("simple-mode", netif, "simple-mode");
+	g_action_map_add_action(G_ACTION_MAP(app), G_ACTION(action));
+
 	GtkWidget *scrolled = gtk_scrolled_window_new();
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled),
 			GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled), netif);
 	GtkWidget *window = adw_win_new(app, scrolled);
-	gtk_window_set_default_size(GTK_WINDOW(window), 700, 500);
+	gtk_window_set_default_size(GTK_WINDOW(window), 0, 400);
 
 	gtk_window_present(GTK_WINDOW(window));
 }
